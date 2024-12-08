@@ -1,134 +1,35 @@
 package repos
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"log"
 
 	"github.com/fnxr21/brand/entities"
-	"github.com/fnxr21/brand/protobuf/golang_protobuf_brand"
-	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 )
 
-const STORAGE_FILE = "./brands-storage.pb"
-
-type BrandRepo struct {
-	brands []entities.Brand
+type repository struct {
+	db *gorm.DB
 }
 
-func NewBrandRepo() *BrandRepo {
-	var br = BrandRepo{make([]entities.Brand, 0)}
-	br.loadFromFileStorage()
-	return &br
+func Repository(db *gorm.DB) *repository {
+	return &repository{db: db}
 }
 
-func (b *BrandRepo) Create(partial entities.Brand) entities.Brand {
-	newItem := entities.Brand{uint(len(b.brands)) + 1, partial.Name, partial.Year}
-	b.brands = append(b.brands, newItem)
-	b.saveToFileStorage()
-	return newItem
+type BrandService interface {
+	Create(ctx context.Context, brand entities.Brand) (entities.Brand, error)
 }
 
-func (b *BrandRepo) GetList() []entities.Brand {
-	return b.brands
+func (r *repository) Create(ctx context.Context, brand entities.Brand) (entities.Brand, error) {
+	log.Println(brand, "brand")
+	log.Println(ctx, "context")
+
+	// err := r.db.WithContext(ctx).Create(&brand).Error
+	return entities.Brand{}, nil
 }
 
-func (p *BrandRepo) GetOne(id uint) (entities.Brand, error) {
-	for _, it := range p.brands {
-		if it.ID == id {
-			return it, nil
-		}
-	}
-	return entities.Brand{}, fmt.Errorf("key '%d' not found", id)
-}
+// func (r *repository) CreateCart(cart models.Cart) (models.Cart, error) {
+// 	err := r.db.Create(&cart).Error
 
-func (b *BrandRepo) Update(id uint, amended entities.Brand) (entities.Brand, error) {
-	for i, it := range b.brands {
-		if it.ID == id {
-			amended.ID = id
-			b.brands = append(b.brands[:i], b.brands[i+1:]...)
-			b.brands = append(b.brands, amended)
-			b.saveToFileStorage()
-			return amended, nil
-		}
-	}
-	return entities.Brand{}, fmt.Errorf("key '%d' not found", amended.ID)
-}
-
-func (b *BrandRepo) DeleteOne(id uint) (bool, error) {
-	for i, it := range b.brands {
-		if it.ID == id {
-			b.brands = append(b.brands[:i], b.brands[i+1:]...)
-			b.saveToFileStorage()
-			return true, nil
-		}
-	}
-	return false, fmt.Errorf("key '%d' not found", id)
-}
-
-func (b *BrandRepo) saveToFileStorage() error {
-
-	brandsMessage := &golang_protobuf_brand.ProtoBrandRepo{
-		Brands: []*golang_protobuf_brand.ProtoBrandRepo_ProtoBrand{},
-	}
-
-	for _, b := range b.brands {
-		brandsMessage.Brands = append(brandsMessage.Brands,
-			&golang_protobuf_brand.ProtoBrandRepo_ProtoBrand{
-				ID: uint64(b.ID), Name: b.Name, Year: uint32(b.Year),
-			})
-
-	}
-
-	data, err := proto.Marshal(brandsMessage)
-	if err != nil {
-		return fmt.Errorf("cannot marshal to binary: %w", err)
-	}
-
-	err = os.WriteFile(STORAGE_FILE, data, 0644)
-	if err != nil {
-		return fmt.Errorf("cannot write binary data to file: %w", err)
-	}
-
-	return nil
-}
-
-func (b *BrandRepo) loadFromFileStorage() error {
-
-	_, err := os.Stat(STORAGE_FILE)
-	if err != nil {
-		fmt.Println("storage file is not found, starting with empty storage")
-		return nil
-	}
-
-	data, err := os.ReadFile(STORAGE_FILE)
-	if err != nil {
-		return fmt.Errorf("cannot read binary data from file: %w", err)
-	}
-
-	var brandsMessage golang_protobuf_brand.ProtoBrandRepo
-	err = proto.Unmarshal(data, &brandsMessage)
-	if err != nil {
-		return fmt.Errorf("cannot unmarshal binary data to protobuf: %w", err)
-	}
-
-	for _, brand := range brandsMessage.Brands {
-		b.brands = append(b.brands,
-			entities.Brand{
-				ID: uint(brand.ID), Name: brand.Name, Year: uint(brand.Year),
-			})
-
-	}
-	return nil
-}
-
-func ToProtoBrand(brand entities.Brand) *golang_protobuf_brand.ProtoBrandRepo_ProtoBrand {
-	return &golang_protobuf_brand.ProtoBrandRepo_ProtoBrand{
-		ID: uint64(brand.ID), Name: brand.Name, Year: uint32(brand.Year),
-	}
-}
-
-func ToBrand(brand *golang_protobuf_brand.ProtoBrandRepo_ProtoBrand) entities.Brand {
-	return entities.Brand{
-		ID: uint((*brand).ID), Name: (*brand).Name, Year: uint((*brand).Year),
-	}
-}
+// 	return cart, err
+// }

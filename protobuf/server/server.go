@@ -4,61 +4,35 @@ import (
 	"context"
 	"log"
 
+	"github.com/fnxr21/brand/config"
 	"github.com/fnxr21/brand/entities"
 	"github.com/fnxr21/brand/protobuf/golang_protobuf_brand"
 	"github.com/fnxr21/brand/repos"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type CRUDServiceServer struct {
-	repo *repos.GenericRepo[entities.Brand]
+type BrandService struct {
+	golang_protobuf_brand.UnimplementedCrudServer
+	repo repos.BrandService
 }
 
-func NewCRUDServiceServer(repo *repos.GenericRepo[entities.Brand]) *CRUDServiceServer {
-	server := CRUDServiceServer{
-		repo: repo,
+func (c *BrandService) Create(ctx context.Context, req *golang_protobuf_brand.ProtoBrand) (*golang_protobuf_brand.BrandResponse, error) {
+	ok := entities.Brand{
+		ID:   uint(req.ID),
+		Name: req.Name,
+		Year: uint(req.Year),
 	}
-	return &server
-}
 
-func (c CRUDServiceServer) Create(_ context.Context, message *golang_protobuf_brand.ProtoBrandRepo_ProtoBrand) (*golang_protobuf_brand.ProtoBrandRepo_ProtoBrand, error) {
-	brand := (*c.repo).Create(repos.ToBrand(message))
-	return repos.ToProtoBrand(brand), nil
-}
+	log.Println(ok, "check")
 
-func (c CRUDServiceServer) GetOne(_ context.Context, id *wrapperspb.Int64Value) (*golang_protobuf_brand.ProtoBrandRepo_ProtoBrand, error) {
-	brand, err := (*c.repo).GetOne(uint(id.Value))
-	if err != nil {
-		log.Printf("failed to get Brand: %v", err)
-		return &golang_protobuf_brand.ProtoBrandRepo_ProtoBrand{}, err
+	// c.repo.Create(ctx, ok)
+	// if err
+	if err := config.DB.Create(&ok).Error; err != nil {
+		log.Println("check sini")
+		return nil, err
 	}
-	return repos.ToProtoBrand(brand), nil
-}
-
-func (c CRUDServiceServer) GetList(_ *emptypb.Empty, stream golang_protobuf_brand.Crud_GetListServer) error {
-	for _, brand := range (*c.repo).GetList() {
-		if err := stream.Send(repos.ToProtoBrand(brand)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c CRUDServiceServer) Update(_ context.Context, message *golang_protobuf_brand.UpdateRequest) (*golang_protobuf_brand.ProtoBrandRepo_ProtoBrand, error) {
-	brand, err := (*c.repo).Update(uint(message.ID.Value), repos.ToBrand(message.Brand))
-	if err != nil {
-		log.Printf("failed to update Brand: %v", err)
-		return &golang_protobuf_brand.ProtoBrandRepo_ProtoBrand{}, err
-	}
-	return repos.ToProtoBrand(brand), nil
-}
-
-func (c CRUDServiceServer) Delete(_ context.Context, message *wrapperspb.Int64Value) (*wrapperspb.BoolValue, error) {
-	success, err := (*c.repo).DeleteOne(uint(message.Value))
-	if err != nil {
-		log.Printf("failed to delete Brand: %v", err)
-		return wrapperspb.Bool(false), err
-	}
-	return wrapperspb.Bool(success), nil
+	return &golang_protobuf_brand.BrandResponse{Brand: &golang_protobuf_brand.ProtoBrand{
+		ID:   uint64(ok.ID),
+		Name: ok.Name,
+		Year: uint32(ok.Year),
+	}}, nil
 }

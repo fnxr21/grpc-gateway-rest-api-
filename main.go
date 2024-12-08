@@ -10,10 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/fnxr21/brand/entities"
+	"github.com/fnxr21/brand/config"
 	"github.com/fnxr21/brand/protobuf/golang_protobuf_brand"
 	"github.com/fnxr21/brand/protobuf/server"
-	"github.com/fnxr21/brand/repos"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -32,12 +31,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-
-	// Create Brand Repository
-	var brandRepo repos.GenericRepo[entities.Brand] = repos.NewBrandRepo()
+	config.InitDB()
 
 	// push RPC server as goroutine
-	go StartRPCServer(&brandRepo)
+	go StartRPCServer()
 
 	// push gRPC-Gateway generated server as goroutine
 	go StartRPCGatewayServer()
@@ -67,15 +64,15 @@ func StartRPCGatewayServer() {
 	log.Fatalln(gwServer.ListenAndServe())
 }
 
-func StartRPCServer(brandRepo *repos.GenericRepo[entities.Brand]) {
+func StartRPCServer() {
 	GRPCPORT := os.Getenv("GRPC_PORT")
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", GRPCPORT))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-
 	s := grpc.NewServer()
-	golang_protobuf_brand.RegisterCrudServer(s, server.NewCRUDServiceServer(brandRepo))
+
+	golang_protobuf_brand.RegisterCrudServer(s, &server.BrandService{})
 
 	log.Printf("gRPC server listening on port %v\n", GRPCPORT)
 	if err := s.Serve(lis); err != nil {

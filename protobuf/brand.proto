@@ -23,31 +23,41 @@ message UpdateRequest {
 }
 
 service Crud {
-	rpc Create(ProtoBrandRepo.ProtoBrand) returns (ProtoBrandRepo.ProtoBrand) {
+	rpc Create(ProtoBrand) returns (BrandResponse) {
         option (google.api.http) = {
             post: "/api/brands"
             body: "*"
         };
     };
-    rpc GetList(google.protobuf.Empty) returns (stream ProtoBrandRepo.ProtoBrand) {
-        option (google.api.http) = {
-            get: "/api/brands"
-        };        
-    };
-    rpc GetOne(google.protobuf.Int64Value) returns (ProtoBrandRepo.ProtoBrand) {
-        option (google.api.http) = {
-            get: "/api/brands/{value}"
-        };        
-    };
-	rpc Update(UpdateRequest) returns (ProtoBrandRepo.ProtoBrand) {
-        option (google.api.http) = {
-            put: "/api/brands/{ID}"
-            body: "*"      
-        };
-    };
-	rpc Delete(google.protobuf.Int64Value) returns (google.protobuf.BoolValue) {
-        option (google.api.http) = {
-            delete: "/api/brands/{value}"
-        };        
-    };
+    // rpc GetList(google.protobuf.Empty) returns (stream ProtoBrandRepo.ProtoBrand) {
+    //     option (google.api.http) = {
+    //         get: "/api/brands"
+    //     };        
+    // };
+    // rpc GetOne(google.protobuf.Int64Value) returns (ProtoBrandRepo.ProtoBrand) {
+    //     option (google.api.http) = {
+    //         get: "/api/brands/{value}"
+    //     };        
+    // };
+	// rpc Update(UpdateRequest) returns (ProtoBrandRepo.ProtoBrand) {
+    //     option (google.api.http) = {
+    //         put: "/api/brands/{ID}"
+    //         body: "*"      
+    //     };
+    // };
+	// rpc Delete(google.protobuf.Int64Value) returns (google.protobuf.BoolValue) {
+    //     option (google.api.http) = {
+    //         delete: "/api/brands/{value}"
+    //     };        
+    // };
+}
+
+ message ProtoBrand {
+        uint64 ID = 1;
+        string Name = 2 [(google.api.field_behavior) = REQUIRED, json_name = "name"];
+        uint32 Year = 3 [(google.api.field_behavior) = REQUIRED, json_name = "year"];
+    }
+
+ message BrandResponse {
+  ProtoBrand brand = 1;
 }
